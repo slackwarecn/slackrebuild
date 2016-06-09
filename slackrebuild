@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (c) 2015-2016 秦凡东 (Qin Fandong)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# ==============================================================================
+# Build Origin Slackware's TXZ Package From Installed Packages
+# ==============================================================================
+
+PKGDIR='/var/log/packages'
+PKGS=''
+PKG=''
+PKG_VIEW=''
+MATCHES=''
+TMPDIR='/tmp'
+RANDSTR=$(cat /dev/urandom | sed -e 's/[^a-zA-Z0-9]//g' | head -n 1 | head -c 8)
+BUILDROOT="${TMPDIR}/slackrebuild.${RANDSTR}"
+MKPKG='makepkg'
+MKPKG_ARGS='-l y -c n'
+MAGIC_FILE_LIST='^FILE\ LIST:$'
+MAGIC_PACKAGE_DESCRIPTION='^FILE\ PACKAGE\ DESCRIPTION:$'
+
+function SRB_Usage ()
+{
+  echo "Usage: slackrebuild <package>"
+  return $?
+}
+
+function SRB_Check ()
+{
+  if [[ ! -r /etc/slackware-version ]]
+  then
+    echo -e "It seems this system is not Slackware Linux.\n"
+            "If I made a mistake, try to reinstall aaa_base package."
+      >&2
+    return 1
+  fi
+
+  if [[ ! -d $PKGDIR ]]
+  then
+    echo "\"${PKGDIR}\" not found, quit." >&2
+    return 1
+  fi
+
+  return $?
+}
+
+function SRB_GetPKGS ()
+{
+  PKGS=( $(find ${PKGDIR} -type f -maxdepth 1 | xargs -I {} basename {}) )
+
+  return $?
+}
+
+function SRB_SearchPKG ()
+{
+  if [[ 1 -ne $# ]]
+  then
+    return 1
+  fi
+
+  MATCHES=( $(echo ${PKGS[@]} | tr '[:space:]' "\n" | grep $1) )
+
+  return $?
+}
+
+function SRB_Choose ()
+{
+  local choose=''
+
+  if [[ 0 -eq ${#MATCHES[@]} ]]
+  then
+    echo "No installed packages matched, quit."
+    exit 0
+  fi
+
+  for ((index=0; index<${#MATCHES[@]}; ++index))
+  do
+    printf "%5d)\t%s\n" $index ${MATCHES[$index]}
+  done
+  printf "%5c)\t<quit>\n" 'q'
+
+  while true
+  do
+    echo -n "Make a choose: "
+    read choose
+
+    if [[ 'q' == $choose ]]
+    then
+      echo "Bye."
+      exit 0
+    fi
+
+    if ! echo $choose | grep -oP '^\d+$' >/dev/null 2>&1
+    then
+      continue
+    fi
+
+    if [[ 'true' == $(awk -v choose=$choose -v border=${#MATCHES[@]}  \
+                      'BEGIN { print (0 - 1 < choose && choose < border) \
+                                ? "true" : "false" }') ]]
+    then
+      break
+    fi
+  done
+
+  PKG=${MATCHES[$choose]}
+  PKG_VIEW="${PKGDIR}/${PKG}"
+
+  return $?
+}
+
+function SRB_MakePKG ()
+{
+  local files_line=$(awk "/${MAGIC_FILE_LIST}/ {print NR + 1; exit 0;}" $PKG_VIEW)
+  local info_line=$(awk "/${MAGIC_PACKAGE_DESCRIPTION}/ {print NR + 1; exit 0;}" $PKG_VIEW)
+  local files=( $(sed -n "${files_line},\$p" $PKG_VIEW) )
+  local infos=( $(sed -n "${info_line},${files_line}p" $PKG_VIEW) )
+
+  for file in ${files[@]}
+  do
+    if [[ '.' == $file ]]
+    then
+      continue
+    fi
+
+    if [[ -d $file ]]
+    then
+      mkdir -p $BUILDROOT/$file
+    else
+      cp -v $file $BUILDROOT/$file
+    fi
+  done
+}
+
+# function MAIN ()
+{
+  pkg=''
+
+  if [[ 1 -ne $# ]]
+  then
+    SRB_Usage
+    exit 1
+  fi
+
+  pkg=$1
+
+  SRB_GetPKGS
+  SRB_SearchPKG $pkg
+  SRB_Choose
+  SRB_MakePKG
+}
+
