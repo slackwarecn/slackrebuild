@@ -150,6 +150,7 @@ function SRB_MakePKG ()
 
   # Copy files
   # This is ok, directory is always listed before its context
+  # TODO: Here will fail if a space in $file, should avoid to use array
   for file in ${files[@]}
   do
     if [[ '.' == $file ]]
@@ -182,7 +183,11 @@ function SRB_MakePKG ()
   fi
 
   # Clean build root
-  rm -rf $BUILDROOT
+  if [[ -d $BUILDROOT ]]
+  then
+    echo "Do clean..."
+    rm -rf $BUILDROOT
+  fi
 
   return $ret
 }
