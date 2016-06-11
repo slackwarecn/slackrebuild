@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Copyright (c) 2015-2016 秦凡东 (Qin Fandong)
+# Copyright (c) 2016 秦凡东 (Qin Fandong),
+#                    The Slackware Linux CN Community
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +18,8 @@
 # ==============================================================================
 # Build Origin Slackware's TXZ Package From Installed Packages
 # ==============================================================================
+NAME='slackrebuild'
+VERSION='0.1'
 
 PKGDIR='/var/log/packages'
 PKGS=''
@@ -24,12 +27,11 @@ PKG=''
 PKG_VIEW=''
 MATCHES=''
 TMPDIR='/tmp'
-RANDSTR=$(cat /dev/urandom | sed -e 's/[^a-zA-Z0-9]//g' | head -n 1 | head -c 8)
+ROOTDIR='/'
+RANDSTR=$RANDOM
 BUILDROOT="${TMPDIR}/slackrebuild.${RANDSTR}"
 MKPKG='makepkg'
 MKPKG_ARGS='-l y -c n'
-MAGIC_FILE_LIST='^FILE\ LIST:$'
-MAGIC_PACKAGE_DESCRIPTION='^FILE\ PACKAGE\ DESCRIPTION:$'
 
 function SRB_Usage ()
 {
@@ -37,13 +39,19 @@ function SRB_Usage ()
   return $?
 }
 
+function SRB_Whoami ()
+{
+  echo -e "Start ${NAME} version ${VERSION}.\n"
+  return $?
+}
+
 function SRB_Check ()
 {
   if [[ ! -r /etc/slackware-version ]]
   then
-    echo -e "It seems this system is not Slackware Linux.\n"
-            "If I made a mistake, try to reinstall aaa_base package."
-      >&2
+    ( echo 'It seems this system is not Slackware Linux.'
+      echo 'If I made a mistake, try to reinstall aaa_base package.'
+    ) >&2
     return 1
   fi
 
@@ -123,11 +131,25 @@ function SRB_Choose ()
 
 function SRB_MakePKG ()
 {
-  local files_line=$(awk "/${MAGIC_FILE_LIST}/ {print NR + 1; exit 0;}" $PKG_VIEW)
+  local MAGIC_PACKAGE_DESCRIPTION='^PACKAGE\ DESCRIPTION:$'
+  local MAGIC_FILE_LIST='^FILE\ LIST:$'
+  local SLACK_DESC="${BUILDROOT}/install/slack-desc"
+  local DOINST_SH="${BUILDROOT}/install/doinst.sh"
   local info_line=$(awk "/${MAGIC_PACKAGE_DESCRIPTION}/ {print NR + 1; exit 0;}" $PKG_VIEW)
+  local files_line=$(awk "/${MAGIC_FILE_LIST}/ {print NR + 1; exit 0;}" $PKG_VIEW)
   local files=( $(sed -n "${files_line},\$p" $PKG_VIEW) )
-  local infos=( $(sed -n "${info_line},${files_line}p" $PKG_VIEW) )
+  local ret=0
 
+  # Create slack-desc
+  mkdir -p $(dirname $SLACK_DESC)
+  sed -n "${info_line},$(expr ${files_line} - 2)p" $PKG_VIEW >>$SLACK_DESC
+
+  # Create doinst.sh
+  mkdir -p $(dirname $DOINST_SH)
+  echo '#!/usr/bin/env bash' >>$DOINST_SH
+
+  # Copy files
+  # This is ok, directory is always listed before its context
   for file in ${files[@]}
   do
     if [[ '.' == $file ]]
@@ -135,18 +157,41 @@ function SRB_MakePKG ()
       continue
     fi
 
-    if [[ -d $file ]]
+    if echo $file | grep -oP '^install/'
     then
-      mkdir -p $BUILDROOT/$file
+      continue
+    fi
+
+    if [[ -d "${ROOTDIR}/${file}" ]]
+    then
+      mkdir -p "${BUILDROOT}/${file}"
     else
-      cp -v $file $BUILDROOT/$file
+      cp -Lv "${ROOTDIR}${file}" "${BUILDROOT}/${file}"
     fi
   done
+
+  # Create package
+  cd $BUILDROOT
+  if command $MKPKG $MKPKG_ARGS "${TMPDIR}/${PKG}.txz"
+  then
+    echo "Package write to \"${TMPDIR}/${PKG}.txz\"."
+    ret=0
+  else
+    echo "Package build error." >&2
+    ret=1
+  fi
+
+  # Clean build root
+  rm -rf $BUILDROOT
+
+  return $ret
 }
 
 # function MAIN ()
 {
   pkg=''
+
+  SRB_Whoami || exit $?
 
   if [[ 1 -ne $# ]]
   then
@@ -156,9 +201,10 @@ function SRB_MakePKG ()
 
   pkg=$1
 
-  SRB_GetPKGS
-  SRB_SearchPKG $pkg
-  SRB_Choose
-  SRB_MakePKG
+  SRB_Check || exit $?
+  SRB_GetPKGS || exit $?
+  SRB_SearchPKG $pkg || exit $?
+  SRB_Choose || exit $?
+  SRB_MakePKG || exit $?
 }
 
