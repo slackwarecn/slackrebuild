@@ -18,6 +18,12 @@ sudo make install
 
 > Current no SlackBuild for this tools available but I will do it soon.
 
+# USAGE
+
+```bash
+slackrebuild
+```
+
 # COPYRIGHT
 
 Copyright (c) 2016 秦凡东 (Qin Fandong), The Slackware Linux CN Community

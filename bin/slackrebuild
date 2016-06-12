@@ -64,7 +64,7 @@ function SRB_Check ()
   return $?
 }
 
-function SRB_GetPKGS ()
+function SRB_GetPKGs ()
 {
   PKGS=( $(find ${PKGDIR} -type f -maxdepth 1 | xargs -I {} basename {}) )
 
@@ -192,7 +192,7 @@ function SRB_MakePKG ()
   return $ret
 }
 
-# function MAIN ()
+# function main ()
 {
   pkg=''
 
@@ -207,7 +207,7 @@ function SRB_MakePKG ()
   pkg=$1
 
   SRB_Check || exit $?
-  SRB_GetPKGS || exit $?
+  SRB_GetPKGs || exit $?
   SRB_SearchPKG $pkg || exit $?
   SRB_Choose || exit $?
   SRB_MakePKG || exit $?
