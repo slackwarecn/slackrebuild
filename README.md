@@ -13,7 +13,7 @@ For example if you have installed [qt5](https://slackbuilds.org/repository/14.1/
 ```bash
 git clone https://github.com/slackwarecn/slackrebuild.git
 git checkout SlackBuild
-PREBUILD=1 slackrebuild.SlackBuild
+PREBUILD=1 ./slackrebuild.SlackBuild
 su -c 'installpkg /tmp/slackrebuild-*.txz'
 ```
 
