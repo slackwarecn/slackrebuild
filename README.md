@@ -6,17 +6,16 @@ slackrebuild - Build Slackware's TXZ Package From Installed Packages
 
 This can create origin txz package from packages which has installed in your slackware linux.
 
-For example if you have installed [qt5](https://slackbuilds.org/repository/14.1/libraries/qt5/), this tools can create a qt5 package which equivalent to the one you build from SlackBuild, and you can share this txz package to others.
+For example if you have installed [qt5](https://slackbuilds.org/repository/14.1/libraries/qt5) from [SlackBuilds.org](https://slackbuilds.org), this tools can create a qt5 package which equivalent to the one you build from SlackBuild, and you can share this txz package to others.
 
 # INSTALLATION
 
 ```bash
 git clone https://github.com/slackwarecn/slackrebuild.git
-cd slackrebuild
-sudo make install
+git checkout SlackBuild
+PREBUILD=1 slackrebuild.SlackBuild
+su -c 'installpkg /tmp/slackrebuild-*.txz'
 ```
-
-> Current no SlackBuild for this tools available but I will do it soon.
 
 # USAGE
 
