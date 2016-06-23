@@ -1,5 +1,6 @@
 *~
 *.bak
 *.swp
+*.tar.gz
 Makefile.old
 
