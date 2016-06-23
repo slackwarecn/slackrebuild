@@ -67,5 +67,5 @@ install -Dm0755 "${CWD}/doinst.sh" "${PKG}/install/doinst.sh"
 
 cd $PKG
 command $MAKEPKG $MAKEPKG_ARGS  \
-        "${OUTPUT}/${RELEASE}-${ARCH}-${BUILD}${TAG}.${PKGTYPE:-tgz}"
+        "${OUTPUT}/${RELEASE}-${ARCH}-${BUILD}${TAG}.${PKGTYPE:-txz}"
 
