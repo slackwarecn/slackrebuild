@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ==============================================================================
-# Build Origin Slackware's TXZ Package From Installed Packages
+# Build Slackware's TXZ Package From Installed Packages
 # ==============================================================================
 NAME='slackrebuild'
-VERSION='0.1'
+VERSION='0.2'
 
 PKGDIR='/var/log/packages'
 PKGS=''
 PKG=''
+PKGTYPE='txz'
 PKG_VIEW=''
 MATCHES=''
 TMPDIR='/tmp'
 ROOTDIR='/'
-RANDSTR=$RANDOM
-BUILDROOT="${TMPDIR}/slackrebuild.${RANDSTR}"
+BUILDROOT="${TMPDIR}/${NAME}.${RANDOM}"
 MKPKG='makepkg'
 MKPKG_ARGS='-l y -c n'
+SUMTOOL='sha256sum'
+SUMTYPE='sha256'
 
 function SRB_Usage ()
 {
@@ -131,6 +133,7 @@ function SRB_Choose ()
 
 function SRB_MakePKG ()
 {
+  local PKGFILE="${TMPDIR}/${PKG}.${PKGTYPE}"
   local MAGIC_PACKAGE_DESCRIPTION='^PACKAGE\ DESCRIPTION:$'
   local MAGIC_FILE_LIST='^FILE\ LIST:$'
   local SLACK_DESC="${BUILDROOT}/install/slack-desc"
@@ -173,9 +176,14 @@ function SRB_MakePKG ()
 
   # Create package
   cd $BUILDROOT
-  if command $MKPKG $MKPKG_ARGS "${TMPDIR}/${PKG}.txz"
+  if command $MKPKG $MKPKG_ARGS $PKGFILE
   then
-    echo "Package write to \"${TMPDIR}/${PKG}.txz\"."
+    echo "Write \"${PKGFILE}\"."
+    if type $SUMTOOL >/dev/null 2>&1
+    then
+      command $SUMTOOL $PKGFILE >"${PKGFILE}.${SUMTYPE}"
+      echo "Write \"${PKGFILE}.${SUMTYPE}\"."
+    fi
     ret=0
   else
     echo "Package build error." >&2
