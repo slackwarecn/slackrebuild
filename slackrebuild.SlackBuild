@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (c) 2015-2016 秦凡东 (Qin Fandong)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# ==============================================================================
+# Slackware build script for slackrebuild
+# ==============================================================================
+set -e
+
+PREBUILD=${PREBUILD:-0}
+
+PRGNAM='slackrebuild'
+VERSION=${VERSION:-0.2}
+RELEASE="${PRGNAM}-${VERSION}"
+TARBALL="${RELEASE}.tar.gz"
+GTAG="v${VERSION}"
+BUILD=${BUILD:-1}
+TAG=${TAG:-_SBo}
+CWD=$(dirname $(readlink -f $0))
+TMP=${TMP:-/tmp/SBo}
+PKG="${TMP}/package-${PRGNAM}"
+BUILDROOT="${TMP}/${RELEASE}"
+OUTPUT=${OUTPUT:-/tmp}
+SOURCE_URL='https://github.com/slackwarecn/slackrebuild.git'
+SOURCE=$(basename $SOURCE_URL)
+SOURCE=${SOURCE%-.git}
+REPODIR="${TMP}/${SOURCE}"
+MAKEPKG='makepkg'
+MAKEPKG_ARGS='-l y -c n'
+
+if [[ 1 -eq $PREBUILD ]]
+then
+  test -d $REPODIR && rm -rvf $REPODIR || :
+  mkdir -p $REPODIR
+  git clone $SOURCE_URL $REPODIR
+  git archive --format=tar --prefix "${RELEASE}/" $GTAG \
+    | gzip -9 > "${CWD}/${TARBALL}"
+fi
+
+test -d $PKG && rm -rvf $PKG || :
+test -d $BUILDROOT && rm -rvf $BUILDROOT || :
+mkdir -p $PKG $OUTPUT $BUILDROOT
+
+tar -zvxf $TARBALL -C $TMP
+
+cd $BUILDROOT
+make install DESTDIR="${PKG}/"
+
+mkdir -p "${PKG}/usr/doc/${PRGNAM}-${VERSION}"
+mkdir -p "${PKG}/install"
+install -Dm0644 "${CWD}/${PRGNAM}.SlackBuild" \
+                "${PKG}/usr/doc/${PRGNAM}-${VERSION}/${PRGNAM}.SlackBuild"
+install -Dm0644 "${CWD}/slack-desc" "${PKG}/install/slack-desc"
+install -Dm0755 "${CWD}/doinst.sh" "${PKG}/install/doinst.sh"
+
+cd $PKG
+command $MAKEPKG $MAKEPKG_ARGS  \
+        "${OUTPUT}/${RELEASE}-${ARCH}-${BUILD}${TAG}.${PKGTYPE:-tgz}"
+

@@ -1,0 +1,11 @@
+PRGNAM="slackrebuild"
+VERSION="0.2"
+HOMEPAGE="https://github.com/slackwarecn/slackrebuild.git"
+DOWNLOAD="https://github.com/slackwarecn/slackrebuild/archive/v0.2.tar.gz"
+MD5SUM="e26eb7f6898432b7a112173bab01b7f8"
+DOWNLOAD_x86_64="https://github.com/slackwarecn/slackrebuild/archive/v0.2.tar.gz"
+MD5SUM_x86_64="e26eb7f6898432b7a112173bab01b7f8"
+REQUIRES="%README%"
+MAINTAINER="Arondight"
+EMAIL="shell_way@foxmail.com"
+
