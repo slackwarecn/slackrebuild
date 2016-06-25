@@ -22,6 +22,7 @@ NAME='slackrebuild'
 VERSION='0.2'
 
 PKGDIR='/var/log/packages'
+SCRIPTDIR='/var/log/scripts'
 PKGS=''
 PKG=''
 PKGTYPE='txz'
@@ -143,13 +144,20 @@ function SRB_MakePKG ()
   local files=( $(sed -n "${files_line},\$p" $PKG_VIEW) )
   local ret=0
 
+  if [[ -d $BUILDROOT ]]
+  then
+    rm -rvf $BUILDROOT
+  fi
+
+  mkdir -p $BUILDROOT
+
   # Create slack-desc
   mkdir -p $(dirname $SLACK_DESC)
   sed -n "${info_line},$(expr ${files_line} - 2)p" $PKG_VIEW >>$SLACK_DESC
 
   # Create doinst.sh
   mkdir -p $(dirname $DOINST_SH)
-  echo '#!/usr/bin/env bash' >>$DOINST_SH
+  install -Dm0755 "${SCRIPTDIR}/${PKG}" $DOINST_SH
 
   # Copy files
   # This is ok, directory is always listed before its context
